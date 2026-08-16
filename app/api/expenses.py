@@ -91,5 +91,6 @@ def delete_expense(
     db.commit()
 
     return {
-        "message": "expense deleted "
+        "message": "expense deleted"
     }
+
