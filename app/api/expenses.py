@@ -1,21 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.expenses import Expense
-from app.schemas.expense import ExpenseCreate, ExpenseUpdate
+from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseResponse
 
 
 router = APIRouter()
 
 
-@router.get("/")
-def get_expenses(db:Session = Depends(get_db)):
-    expenses = db.query(Expense).all()
+@router.get("/", response_model=list[ExpenseResponse])
+def get_expenses(
+    category: str | None = None,
+    skip:int= Query(0,ge=0),
+    limit:int=Query(10,ge=1,le=100),
+    db:Session = Depends(get_db)):
+    query = db.query(Expense)
 
+    if category:
+        query = query.filter(Expense.category == category)
+
+    expenses = query.offset(skip).limit(limit).all()
     return expenses
-
-@router.post("/")
+@router.post("/", response_model=ExpenseResponse, status_code=201)
 def create_expense(
     data: ExpenseCreate,
     db: Session = Depends(get_db)
@@ -32,7 +39,7 @@ def create_expense(
 
     return expense
 
-@router.get("/{expense_id}")
+@router.get("/{expense_id}", response_model=ExpenseResponse)
 def get_expense(
     expense_id: int,
     db: Session = Depends(get_db),
@@ -46,7 +53,7 @@ def get_expense(
         )
     return expense
 
-@router.put("/{expense_id}")
+@router.put("/{expense_id}", response_model=ExpenseResponse)
 def update_expense(
     expense_id: int,
     data: ExpenseUpdate,
