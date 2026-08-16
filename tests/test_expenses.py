@@ -115,3 +115,78 @@ def test_create_expense_invalid_amount():
         }
     )
     assert response.status_code == 422
+
+def test_create_expense_strips_whitespace():
+    response = client.post(
+        "/expenses/",
+        json={
+            "title": "   Lunch   ",
+            "amount": 100,
+            "category": "   food   "
+        }
+    )
+
+    assert response.status_code == 201
+
+    data = response.json()
+
+    assert data["title"] == "Lunch"
+    assert data["category"] == "food"
+
+def test_create_expense_rejects_blank_title():
+    response = client.post(
+        "/expenses/",
+        json={
+            "title": "     ",
+            "amount": 100,
+            "category": "food"
+        }
+    )
+
+    assert response.status_code == 422
+
+def test_update_expense_not_found():
+    response = client.put(
+        "/expenses/999999",
+        json={
+            "title": "Updated",
+            "amount": 500,
+            "category": "food"
+        }
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Expense not found"
+
+def test_delete_expense_not_found():
+    response = client.delete("/expenses/999999")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Expense not found"
+
+def test_filter_expenses_by_category():
+    client.post(
+        "/expenses/",
+        json={
+            "title": "Lunch",
+            "amount": 100,
+            "category": "food"
+        }
+    )
+
+    client.post(
+        "/expenses/",
+        json={
+            "title": "Taxi",
+            "amount": 200,
+            "category": "transport"
+        }
+    )
+
+    response = client.get("/expenses/?category=food")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert all(expense["category"] == "food" for expense in data)

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 
 from app.core.database import get_db
 from app.models.expenses import Expense
@@ -20,7 +21,13 @@ def get_expenses(
     if category:
         query = query.filter(Expense.category == category)
 
-    expenses = query.offset(skip).limit(limit).all()
+    expenses = (
+        query
+        .order_by(desc(Expense.created_at))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     return expenses
 @router.post("/", response_model=ExpenseResponse, status_code=201)
 def create_expense(
