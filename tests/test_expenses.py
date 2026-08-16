@@ -190,3 +190,30 @@ def test_filter_expenses_by_category():
     data = response.json()
 
     assert all(expense["category"] == "food" for expense in data)
+
+def test_expense_pagination():
+    for i in range(5):
+        client.post(
+            "/expenses/",
+            json={
+                "title": f"Expense {i}",
+                "amount": 100,
+                "category": "test"
+            }
+        )
+
+    response = client.get("/expenses/?skip=0&limit=2")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 2
+def test_pagination_limit_validation():
+    response = client.get("/expenses/?limit=101")
+
+    assert response.status_code == 422
+def test_pagination_negative_skip():
+    response = client.get("/expenses/?skip=-1")
+
+    assert response.status_code == 422
