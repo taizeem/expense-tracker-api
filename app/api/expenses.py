@@ -5,27 +5,19 @@ from sqlalchemy import desc
 from app.core.database import get_db
 from app.models.expenses import Expense
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseResponse
-
+from app.core.security import get_current_user
 
 router = APIRouter()
 
 
 @router.get("/", response_model=list[ExpenseResponse])
 def get_expenses(
-    category: str | None = None,
-    skip:int= Query(0,ge=0),
-    limit:int=Query(10,ge=1,le=100),
-    db:Session = Depends(get_db)):
-    query = db.query(Expense)
-
-    if category:
-        query = query.filter(Expense.category == category)
-
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user)
+):
     expenses = (
-        query
-        .order_by(desc(Expense.created_at))
-        .offset(skip)
-        .limit(limit)
+        db.query(Expense)
+        .filter(Expense.user_id == current_user_id)
         .all()
     )
     return expenses
